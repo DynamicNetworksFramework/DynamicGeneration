@@ -3,6 +3,7 @@ dirname = getSrcDirectory(function(x) {x})
 setwd(dirname)
 require('testthat')
 source('Datasets.R')
+source('SimilarityMeasures.R')
 source('DynamicSimulation.R')
 source('DynamicGeneration.R')
 error.file = paste(getwd(),"/Errors.dat",sep="")
@@ -30,12 +31,14 @@ if(msgDebug){
   cat("\nnclasses:",nclasses)
 }
 
-dy.data = prepare.dy.data(ndata,pdataincial)
+dy.data = prepare.dy.data(data,pdataincial)
 
-ndydata = nrow(dy.data)
-ndyclasses = length(unique(classes[dy.data,]))
+ndy.data = nrow(dy.data)
+ndy.classes = length(unique(classes[dy.data[,1],]))
 
 if(msgDebug){
-  cat("\nndydata:",ndydata)
-  cat("\nndyclasses:",ndyclasses)
+  cat("\nndydata:",ndy.data)
+  cat("\nndyclasses:",ndy.classes)
 }
+
+net = generate.network(dy.data)
