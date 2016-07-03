@@ -46,3 +46,20 @@ knn.epsilon.cut <- function(sim.m,k=1,ep){
   }
   return(adj)
 }
+
+
+plot.net <- function(net, classes, colored=T){
+  nc = unique(classes[V(net)$index])
+  colors = rainbow(length(nc))
+  auxclasses = classes[V(net)$index]
+  if(colored){
+    for(i in nc){
+      aux = which(auxclasses == i)
+      V(net)[aux]$color = colors[which(nc==i)]
+    }
+  }
+  filename = paste(name,"net.png",sep="")
+  png(filename=filename)
+  plot.igraph(net)
+  dev.off()
+}

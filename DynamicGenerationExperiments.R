@@ -16,7 +16,8 @@ seedspool = sample(1:1e+05,nseeds,replace=F)
 
 seed = seedspool[1]
 set.seed(seed)
-name = sample(names.datasets,1)
+aux.names.datasets = names.datasets[1:8]
+name = sample(aux.names.datasets,1)
 
 data = prepare.data(name)
 classes = as.matrix(data[[2]])
@@ -42,3 +43,4 @@ if(msgDebug){
 }
 
 net = generate.network(dy.data)
+plot.net(net,classes)
