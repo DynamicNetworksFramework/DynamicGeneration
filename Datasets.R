@@ -1,5 +1,5 @@
 
-names.datasets = c("glass","iris","wine","yeast","ecoli","breast","leaf","seeds","parkinsons","ionosphere")
+names.datasets = c("glass","iris","wine","ecoli","breast","leaf","seeds","yeast","parkinsons","ionosphere")
 
 prepare.data <- function(name){
   stopifnot(dir.exists("Datasets"))
