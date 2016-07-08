@@ -16,7 +16,7 @@ seedspool = sample(1:1e+05,nseeds,replace=F)
 
 seed = seedspool[1]
 set.seed(seed)
-aux.names.datasets = sample(names.datasets[1:7],replace=F)
+aux.names.datasets = names.datasets[1:3]
 
 for(name in aux.names.datasets){
   data = prepare.data(name)
@@ -43,5 +43,18 @@ for(name in aux.names.datasets){
   }
   
   net = generate.network(dy.data)
-  plot.net(net,classes)
+  plot.net(net,classes,"before")
+  aux = c(1:ndata)
+  new.indexes = aux[!aux %in% dy.data[,1]]
+  if(msgDebug){
+    cat("\nNew Data:")
+  }
+  for(i in sample(new.indexes)){
+    if(msgDebug){
+      cat("\n",i)
+    }
+    dy.data = add.object(i,dy.data,data)
+    net = add.vertice.network(net,i,dy.data)
+  }
+  plot.net(net,classes,"after")
 }

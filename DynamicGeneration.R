@@ -16,41 +16,60 @@ generate.network <- function(dy.data, ndy.data = nrow(dy.data), similarity.funct
 
 add.vertice.network <- function(net,index.newdata,dy.data,
                                pnc = 0.1,
-                               insertion.mode = "max", #can be "max" or "random"
-                               use.ep = T,
-                               epsilon = 0.75,
                                similarity.function = inverse.euclidean){
   
   n.neighbors.candidates = ceiling(vcount(net)*pnc)
-  neighbors.candidates = c()
+  prob.degree = degree(net)/sum(degree(net))
+  neighbors.candidates = sample(1:vcount(net),
+                                size = n.neighbors.candidates,
+                                replace = F, prob = prob.degree)
+  
   net = add.vertices(net,1)
   V(net)[vcount(net)]$index = index.newdata
-
-  if(insertion.mode == "max"){
-    net.degrees = degree(net)
-    for(i in 1:n.neighbors.candidates){
-      aux = which.max(net.degrees)
-      neighbors.candidates = c(neighbors.candidates,aux)
-      net.degrees = net.degrees[-aux]
-    }
-    
-    neighbors.candidates = V(net)[neighbors.candidates]$index
-    neighbors.sim = c()
-    for (nc in neighbors.candidates){
-      aux = similarity.function(dy.data[index.newdata,-1],dy.data[nc,-1])
-      neighbors.sim = c(neighbors.sim,aux)
-    }
-    
-    if(use.ep){
-      neighbors.sim[neighbors.sim<epsilon] = 0
-    }
-    if(sum(neighbors.sim) !=0){
-      prob.neighbors = neighbors.sim/sum(neighbors.sim)
-    }
+  
+  neighbors.candidates.indexes = V(net)[neighbors.candidates]$index
+  sim.neighbors = rep(Inf,n.neighbors.candidates)
+  for(i in 1:n.neighbors.candidates){
+    x = which(dy.data[,1]==index.newdata)
+    y = which(dy.data[,1]==neighbors.candidates.indexes[i])
+    sim.neighbors[i] = similarity.function(dy.data[x,-1],
+                                           dy.data[y,-1])
     
   }
+  sim.neighbors[sim.neighbors==Inf] = max(sim.neighbors[sim.neighbors!=Inf])
+  prob.sim = sim.neighbors/sum(sim.neighbors[sim.neighbors!=Inf])
+  neighbors.newdata = c()
+  #base.sim = sim.neighbors[which(neighbors.candidates==neighbors.newdata)]
+  base.sim = mean(sim.neighbors)
+  visited = c()
+  while(length(neighbors.newdata)<n.neighbors.candidates){
+    neighbors.newdata = c(neighbors.newdata,
+                          sample(neighbors.candidates,1,
+                                 replace=F,prob=prob.sim))
+    for(v in neighbors.newdata[!neighbors.newdata %in% visited]){
+      visited = c(visited,v)
+      for(v2 in neighbors(net,v)){
+        aux.index = V(net)[v2]$index
+        x = which(dy.data[,1]==index.newdata)
+        y = which(dy.data[,1]==aux.index)
+        aux.sim = similarity.function(dy.data[x,-1],
+                                      dy.data[y,-1])
+        if(aux.sim >= base.sim){
+          neighbors.newdata = c(neighbors.newdata,v2)
+        }
+      }
+      neighbors.newdata = unique(neighbors.newdata)
+    }
+  }
   
-  
+  if(msgDebug){
+    cat("","New neighbors:",length(neighbors.newdata))
+  }
+  for(v in neighbors.newdata){
+    net = add.edges(net, c(vcount(net),v))
+    net = simplify(net)
+  }
+  return(net)
 }
 
 ################################
@@ -88,7 +107,7 @@ knn.epsilon.cut <- function(sim.m,k=1,ep){
   return(adj)
 }
 
-plot.net <- function(net, classes, colored=T){
+plot.net <- function(net, classes, aux.name, colored=T){
   nc = unique(classes[V(net)$index])
   colors = rainbow(length(nc))
   auxclasses = classes[V(net)$index]
@@ -98,7 +117,7 @@ plot.net <- function(net, classes, colored=T){
       V(net)[aux]$color = colors[which(nc==i)]
     }
   }
-  filename = paste(name,"net.png",sep="")
+  filename = paste(name,aux.name,"net.png",sep="")
   png(filename=filename)
   plot.igraph(net)
   dev.off()

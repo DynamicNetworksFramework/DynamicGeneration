@@ -9,16 +9,17 @@ prepare.dy.data <- function(data,pdatainicial,ndata=nrow(data)){
 
 
 
-add.object <- function(dy.d,data,ndata=nrow(data)){
-  if(ndata==nrow(dy.d)){return(dy.d)}
-  indexes.candidates = which(!c(1:ndata) %in% dy.d[,1])
-  if(length(indexes.candidates)>=2){
-    aux = sample(indexes.candidates,1)
-    dy.d = rbind(dy.d,c(aux,data[aux,]))
-  }else{
-    aux = indexes.candidates
-    dy.d = rbind(dy.d,c(aux,data[aux,]))
-  }
+add.object <- function(index.newdata,dy.d,data,ndata=nrow(data)){
+  # if(ndata==nrow(dy.d)){return(dy.d)}
+  # indexes.candidates = which(!c(1:ndata) %in% dy.d[,1])
+  # if(length(indexes.candidates)>=2){
+  #   aux = sample(indexes.candidates,1)
+  #   dy.d = rbind(dy.d,c(aux,data[aux,]))
+  # }else{
+  #   aux = indexes.candidates
+  #   dy.d = rbind(dy.d,c(aux,data[aux,]))
+  # }
+  dy.d = rbind(dy.d,c(index.newdata,data[index.newdata,]))
   return(dy.d)
 }
 
