@@ -16,11 +16,11 @@ seedspool = sample(1:1e+05,nseeds,replace=F)
 
 seed = seedspool[1]
 set.seed(seed)
-aux.names.datasets = names.datasets[1:3]
+aux.names.datasets = names.datasets[2]
 
 for(name in aux.names.datasets){
   data = prepare.data(name)
-  classes = as.matrix(data[[2]])
+  classes = as.matrix(as.numeric(as.factor(data[[2]])))
   data = as.matrix(data[[1]])
   
   nclasses = length(unique(classes))
@@ -54,7 +54,13 @@ for(name in aux.names.datasets){
       cat("\n",i)
     }
     dy.data = add.object(i,dy.data,data)
-    net = add.vertice.network(net,i,dy.data)
+    net = add.vertex.network(net,i,dy.data)
+    
+    aux = infomap.community(net)
+    result = compare(classes[dy.data[,1]],aux$membership,"nmi")
+    if(msgDebug){
+      cat("","nmi:",result)
+    }
   }
   plot.net(net,classes,"after")
 }
