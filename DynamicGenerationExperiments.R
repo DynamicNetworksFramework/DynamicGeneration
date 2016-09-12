@@ -9,14 +9,14 @@ source('DynamicGeneration.R')
 error.file = paste(getwd(),"/Errors.dat",sep="")
 
 msgDebug = T
-pdatainitial = 0.5
+pdatainitial = 0.75
 
 nseeds = 100
 seedspool = sample(1:1e+05,nseeds,replace=F)
 
 seed = seedspool[1]
 set.seed(seed)
-aux.names.datasets = names.datasets[2]
+aux.names.datasets = names.datasets[1:3]
 
 for(name in aux.names.datasets){
   data = prepare.data(name)
@@ -50,16 +50,21 @@ for(name in aux.names.datasets){
     cat("\nNew Data:")
   }
   for(i in sample(new.indexes)){
-    if(msgDebug){
-      cat("\n",i)
-    }
+    # if(msgDebug){
+    #   cat("\n",i)
+    # }
     dy.data = add.object(i,dy.data,data)
-    net = add.vertex.network(net,i,dy.data)
-    
+    time1 = system.time((net = add.vertex.network(net,i,dy.data)))
+    time2 = system.time((net2 = generate.network(dy.data)))
     aux = infomap.community(net)
+    aux2 = infomap.community(net2)
     result = compare(classes[dy.data[,1]],aux$membership,"nmi")
+    result2 = compare(classes[dy.data[,1]],aux2$membership,"nmi")
     if(msgDebug){
-      cat("","nmi:",result)
+      cat("","nmi1:",result)
+      cat("","nmi2:",result2)
+      cat("","tempo1:",as.numeric(time1[3]))
+      cat("","tempo2:",as.numeric(time2[3]))    
     }
   }
   plot.net(net,classes,"after")

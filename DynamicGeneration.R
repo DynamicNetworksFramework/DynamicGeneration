@@ -17,19 +17,19 @@ generate.network <- function(dy.data, ndy.data = nrow(dy.data),
 }
 
 add.vertex.network <- function(net,pk.newdata,dy.data,
-                               pnc = 0.1,
+                               pnc = 0.05,
                                similarity.function = inverse.euclidean){
   
   net = add.vertices(net,1)
   V(net)[vcount(net)]$pk = pk.newdata
   
-  neighbors.newdata = pick.new.neighbors3(net=net, pk.newdata = pk.newdata, 
+  neighbors.newdata = pick.new.neighbors(net=net, pk.newdata = pk.newdata, 
                                          dy.data = dy.data, pnc=pnc,
                                          similarity.function = similarity.function)
   
-  if(msgDebug){
-    cat("","New neighbors:",length(neighbors.newdata))
-  }
+  # if(msgDebug){
+  #   cat("","New neighbors:",length(neighbors.newdata))
+  # }
   for(v in neighbors.newdata){
     net = add.edges(net, c(vcount(net),v))
     net = simplify(net)
@@ -37,138 +37,13 @@ add.vertex.network <- function(net,pk.newdata,dy.data,
   return(net)
 }
 
-pick.new.neighbors <- function(net,pk.newdata,dy.data,
-                               pnc = 0.1,
-                               similarity.function = inverse.euclidean){
-  
-  #Firsts neighbors candidates, by degree
-  n.neighbors.candidates = ceiling(vcount(net)*pnc)
-  prob.degree = degree(net)/sum(degree(net))
-  neighbors.candidates = sample(1:vcount(net),
-                                size = n.neighbors.candidates,
-                                replace = F, prob = prob.degree)
-  
-  neighbors.candidates.pks = V(net)[neighbors.candidates]$pk
-  sim.neighbors = rep(Inf,n.neighbors.candidates)
-  
-  x = which(dy.data[,1]==index.newdata)
-  for(i in 1:n.neighbors.candidates){
-    y = which(dy.data[,1]==neighbors.candidates.pks[i])
-    sim.neighbors[i] = similarity.function(dy.data[x,-1],
-                                           dy.data[y,-1])
-    
-  }
-  
-  sim.neighbors[sim.neighbors==Inf] = max(sim.neighbors[sim.neighbors!=Inf])
-  prob.sim = sim.neighbors/sum(sim.neighbors[sim.neighbors!=Inf])
-  
-  neighbors.newdata = c()
-  
-  #base.sim = sim.neighbors[which(neighbors.candidates==neighbors.newdata)]
-  base.sim = mean(sim.neighbors)
-  visited = c()
-  while(length(neighbors.newdata)<n.neighbors.candidates){
-    neighbors.newdata = c(neighbors.newdata,
-                          sample(neighbors.candidates,1,
-                                 replace=F,prob=prob.sim))
-    for(v in neighbors.newdata[!neighbors.newdata %in% visited]){
-      visited = c(visited,v)
-      for(v2 in neighbors(net,v)){
-        aux.index = V(net)[v2]$pk
-        y = which(dy.data[,1]==aux.index)
-        aux.sim = similarity.function(dy.data[x,-1],
-                                      dy.data[y,-1])
-        if(aux.sim >= base.sim){
-          neighbors.newdata = c(neighbors.newdata,v2)
-        }
-      }
-      neighbors.newdata = unique(neighbors.newdata)
-    }
-  }
-  
-  return(neighbors.newdata)
-}
 
-pick.new.neighbors2 <- function(net,pk.newdata,dy.data,
-                               pnc = 0.1,
-                               similarity.function = inverse.euclidean,
-                               pdegree = 0.1){
-  
-  #Firsts neighbors candidates, by degree
-  n.neighbors.candidates = ceiling(vcount(net)*pnc)
-  prob.degree = degree(net)/sum(degree(net))
-  neighbors.candidates = sample(1:vcount(net),
-                                size = n.neighbors.candidates,
-                                replace = F, prob = prob.degree)
-  
-  neighbors.candidates.pks = V(net)[neighbors.candidates]$pk
-  sim.neighbors = rep(Inf,n.neighbors.candidates)
-  
-  x = which(dy.data[,1]==index.newdata)
-  for(i in 1:n.neighbors.candidates){
-    y = which(dy.data[,1]==neighbors.candidates.pks[i])
-    sim.neighbors[i] = similarity.function(dy.data[x,-1],
-                                           dy.data[y,-1])
-    
-  }
-  
-  sim.neighbors[sim.neighbors==Inf] = max(sim.neighbors[sim.neighbors!=Inf])
-  prob.sim = sim.neighbors/sum(sim.neighbors[sim.neighbors!=Inf])
-  
-  neighbors.newdata = c()
-  visited = c()
-  
-  min.degree = round(mean(degree(net))*(1-pdegree))
-  max.degree = round(mean(degree(net))*(1+pdegree))
-  newdata.degree = sample(min.degree:max.degree,1)
-  
-  
-  current.vertex = sample(neighbors.candidates,1,replace=F,prob=prob.sim)
-  current.vertex.neighbors = neighbors(net,current.vertex)
-  
-  while(length(current.vertex.neighbors)>0){
-    visited = c(visited,current.vertex)
-    aux.pk = V(net)[current.vertex]$pk
-    y = which(dy.data[,1]==aux.pk)
-    aux.sim = similarity.function(dy.data[x,-1],
-                                  dy.data[y,-1])
-    aux.mean.sim = c()
-    for(i in 1:length(current.vertex.neighbors)){
-      aux.pk = current.vertex.neighbors[i]
-      aux.pk = V(net)[aux.pk]$pk
-      y = which(dy.data[,1]==aux.pk)
-      aux.mean.sim = c(aux.mean.sim,similarity.function(dy.data[x,-1],dy.data[y,-1]))
-    }
-    if(aux.sim>mean(aux.mean.sim)){
-      neighbors.newdata = c(neighbors.newdata,current.vertex)
-    }
-    
-    neighbors.candidates = c(current.vertex,current.vertex.neighbors)
-    prob.sim = c(aux.sim,aux.mean.sim)
-    prob.sim = prob.sim/sum(prob.sim)
-    
-    current.vertex = sample(neighbors.candidates,1,prob=prob.sim)
-    current.vertex.neighbors = neighbors(net,current.vertex)
-    current.vertex.neighbors = current.vertex.neighbors[!current.vertex.neighbors %in% visited]
-    
-    if(length(neighbors.newdata)>=newdata.degree){
-      current.vertex.neighbors = c()
-      if(msgDebug){
-        cat("","max degree!")
-      }
-    }
-  }
-  
-  
-  return(neighbors.newdata)
-}
-
-pick.new.neighbors3 <- function(net,pk.newdata,dy.data,
-                                pnc = 0.1,
+pick.new.neighbors <- function(net,pk.newdata, dy.data,
                                 similarity.function = inverse.euclidean,
-                                pdegree = 0.1){
+                                pnc = 0.1, pdegree = 0.1){
   
   #Firsts neighbors candidates, by degree
+  
   n.neighbors.candidates = ceiling(vcount(net)*pnc)
   prob.degree = degree(net)/sum(degree(net))
   neighbors.candidates = sample(1:vcount(net),
@@ -190,57 +65,69 @@ pick.new.neighbors3 <- function(net,pk.newdata,dy.data,
   prob.sim = sim.neighbors/sum(sim.neighbors[sim.neighbors!=Inf])
   
   neighbors.newdata = c()
-  visited = c()
+  visited = neighbors.candidates
   base.sim = mean(sim.neighbors)
   min.degree = round(mean(degree(net)))
   max.degree = round(mean(degree(net))*(1+pdegree))
   newdata.degree = sample(min.degree:max.degree,1)
   
-  
   current.vertex = sample(neighbors.candidates,1,replace=F,prob=prob.sim)
   current.vertex.neighbors = neighbors(net,current.vertex)
+  # neighbors.candidates = c()
+  # sim.neighbors = c()
   
-  while(length(current.vertex.neighbors)>0){
+  while(length(neighbors.candidates)>0){
     visited = c(visited,current.vertex)
-    aux.pk = V(net)[current.vertex]$pk
-    y = which(dy.data[,1]==aux.pk)
-    aux.sim = similarity.function(dy.data[x,-1],
-                                  dy.data[y,-1])
+    neighbors.newdata = c(neighbors.newdata,current.vertex)
     
-    if(aux.sim>=base.sim){
-      neighbors.newdata = c(neighbors.newdata,current.vertex)
-    }
-    
-    aux.neighbors.sim = c()
-    for(i in 1:length(current.vertex.neighbors)){
-      aux.pk = current.vertex.neighbors[i]
-      aux.pk = V(net)[aux.pk]$pk
-      y = which(dy.data[,1]==aux.pk)
-      aux.neighbors.sim = c(aux.neighbors.sim,similarity.function(dy.data[x,-1],dy.data[y,-1]))
-    }
-    
-    aux.neighbors.sim[aux.neighbors.sim==Inf] = max(aux.neighbors.sim[aux.neighbors.sim!=Inf])
-    prob.sim = aux.neighbors.sim/sum(aux.neighbors.sim)
     # if(msgDebug){
-    #   cat("\nvizi:",length(current.vertex.neighbors))
-    #   cat("\nprob:",length(prob.sim))
+    #   #cat("\nCurrent:",current.vertex)
+    #   #cat("\nCurrent neigh:",current.vertex.neighbors)
+    #   #cat("\nVisited:",length(visited))
+    #   #cat("\nCandidates:",neighbors.candidates)
+    #   #cat("\nNew neighbors:",neighbors.newdata)
+    #   #cat("\nSim min:",base.sim)
     # }
-    
-    if(length(current.vertex.neighbors)>1){
-      current.vertex = sample(current.vertex.neighbors,1,prob=prob.sim)
-    }else{
-      current.vertex = current.vertex.neighbors
+    if(length(current.vertex.neighbors)>0){
+      for(i in 1:length(current.vertex.neighbors)){
+        visited = c(visited,current.vertex.neighbors[i])
+        aux.pk = current.vertex.neighbors[i]
+        aux.pk = V(net)[aux.pk]$pk
+        y = which(dy.data[,1]==aux.pk)
+        aux.sim = similarity.function(dy.data[x,-1],dy.data[y,-1])
+        if (aux.sim >= base.sim){
+          neighbors.candidates = c(neighbors.candidates, current.vertex.neighbors[i])
+          sim.neighbors = c(sim.neighbors,aux.sim)
+        }
+      }
     }
+    
+    sim.neighbors[sim.neighbors==Inf] = max(sim.neighbors[sim.neighbors!=Inf])
+    
+    prob.sim = sim.neighbors/(sum(sim.neighbors))
+    
+    if(length(neighbors.candidates)>1){
+      current.vertex = sample(neighbors.candidates,1,prob=prob.sim)
+      current.vertex.id = which(neighbors.candidates==current.vertex)
+      neighbors.candidates = neighbors.candidates[-current.vertex.id]
+      sim.neighbors = sim.neighbors[-current.vertex.id]
+    }else{
+      current.vertex = neighbors.candidates
+      neighbors.candidates = c()
+    }
+    
+    base.sim = mean(sim.neighbors)
     current.vertex.neighbors = neighbors(net,current.vertex)
     current.vertex.neighbors = current.vertex.neighbors[!current.vertex.neighbors %in% visited]
+    visited = unique(visited)
     
     if(length(neighbors.newdata)>=newdata.degree){
-      current.vertex.neighbors = c()
+      neighbors.candidates = c()
     }
   }
   
+  return(unique(neighbors.newdata))
   
-  return(neighbors.newdata)
 }
 
 ################################
