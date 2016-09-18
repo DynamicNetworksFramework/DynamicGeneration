@@ -96,6 +96,8 @@ pick.new.neighbors <- function(net,pk.newdata, dy.data,
         y = which(dy.data[,1]==aux.pk)
         aux.sim = similarity.function(dy.data[x,-1],dy.data[y,-1])
         if (aux.sim >= base.sim){
+          neighbors.newdata = c(neighbors.newdata,current.vertex.neighbors[i])
+        }else{
           neighbors.candidates = c(neighbors.candidates, current.vertex.neighbors[i])
           sim.neighbors = c(sim.neighbors,aux.sim)
         }

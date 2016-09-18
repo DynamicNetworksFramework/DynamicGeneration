@@ -16,7 +16,9 @@ seedspool = sample(1:1e+05,nseeds,replace=F)
 
 seed = seedspool[1]
 set.seed(seed)
-aux.names.datasets = names.datasets[1:3]
+aux.names.datasets = names.datasets
+
+resultados = list()
 
 for(name in aux.names.datasets){
   data = prepare.data(name)
@@ -46,8 +48,11 @@ for(name in aux.names.datasets){
   plot.net(net,classes,"before")
   aux = c(1:ndata)
   new.indexes = aux[!aux %in% dy.data[,1]]
+  
+  resultado = matrix(nrow = length(new.indexes),ncol = 4)
+  j = 1
   if(msgDebug){
-    cat("\nNew Data:")
+    cat("\nNew Data:",length(new.indexes),"\n")
   }
   for(i in sample(new.indexes)){
     # if(msgDebug){
@@ -60,12 +65,27 @@ for(name in aux.names.datasets){
     aux2 = infomap.community(net2)
     result = compare(classes[dy.data[,1]],aux$membership,"nmi")
     result2 = compare(classes[dy.data[,1]],aux2$membership,"nmi")
+    resultado[j,1] = result
+    resultado[j,2] = result2
+    resultado[j,3] = as.numeric(time1[3])
+    resultado[j,4] = as.numeric(time2[3])
+    
     if(msgDebug){
-      cat("","nmi1:",result)
-      cat("","nmi2:",result2)
-      cat("","tempo1:",as.numeric(time1[3]))
-      cat("","tempo2:",as.numeric(time2[3]))    
+      #cat("","nmi1:",result)
+      #cat("","nmi2:",result2)
+      #cat("","tempo1:",as.numeric(time1[3]))
+      #cat("","tempo2:",as.numeric(time2[3])) 
+      cat("",j)
     }
+    j = j+1
   }
+  resultados = c(resultados,list(resultado))
   plot.net(net,classes,"after")
+}
+
+
+for(i in 1:10){
+  filename = paste("Resultados",i,".dat",sep="")
+  aux = t(as.matrix(resultados[[i]]))
+  write(aux,file=filename,append = F,ncolumns = nrow(aux))
 }
